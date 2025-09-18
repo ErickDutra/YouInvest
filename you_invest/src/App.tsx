@@ -1,24 +1,23 @@
-// import { useState } from "react";
-// import React from "react";
-// import AppBar from './components/AppBar'
-// import MonitorPage from './pages/MonitorPage'
+import React from "react";
+import { Routes, Route } from "react-router-dom";
+import AppBar from './components/AppBar'
+import MonitorPage from './pages/MonitorPage'
+import VisaoGeral from './components/VisaoGeral'
+import Acoes from './components/Acoes'
 
 
-// const TABS = [
-//   { label: "Visão Geral", key: "visao-geral" },
-//   { label: "Ações", key: "acoes" },
-//   { label: "FIIs", key: "fiis" },
-//   { label: "Crypto", key: "crypto" },
-// ];
 
-// function App() {
-//   const [activeTab, setActiveTab] = useState("visao-geral");
+function App() {
+  return (
+    <>
+      <AppBar />
+      <Routes>
+        <Route path="/" element={<VisaoGeral />} />
+        <Route path="/monitor" element={<MonitorPage />} />
+        <Route path="/indicadores" element={<Acoes />} />
+      </Routes>
+    </>
+  );
+}
 
-//   return (
-//     <>
-//       <AppBar onTabChange={setActiveTab} tabs={TABS} />
-//       <MonitorPage activeTab={activeTab} tabs={TABS} />
-//     </>
-//   );
-// }
-//  export default React.memo(App);
+export default React.memo(App);

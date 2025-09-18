@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Link } from "react-router-dom";
 import "../styles/AppBar.css";
 import logo from '../assets/images/logo_2.png';
 
@@ -19,9 +20,9 @@ const AppBar: React.FC = () => {
             </button>
             <img src={logo} className="app-bar-logo" alt="Logo" />
             <nav className={`app-bar-nav ${menuOpen ? 'open' : ''}`}>
-                <a href="/home">Home</a>
-                <a href="/investimentos">Investimentos</a>
-                <a href="/perfil">Perfil</a>
+                <Link to="/" onClick={() => setMenuOpen(false)}>Home</Link>
+                <Link to="/monitor" onClick={() => setMenuOpen(false)}>Monitor</Link>
+                <Link to="/indicadores" onClick={() => setMenuOpen(false)}>indicadores</Link>
             </nav>
             {menuOpen && <div className="overlay" onClick={() => setMenuOpen(false)}></div>}
         </header>
