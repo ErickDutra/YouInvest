@@ -1,0 +1,151 @@
+.app-bar {
+  width: 100%;
+  height: 64px;
+  background-color: #2d3748;
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  color: #fff;
+  box-shadow: var(--shadow);
+}
+
+.app-bar-title {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.app-bar-logo {
+    align-self: center;
+  height: 80px;
+  margin-right: 16px;
+  filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.5));
+}
+
+.burger-menu {
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  height: 40px;
+  width: 40px;
+  margin-right: 46%;
+  margin-left: 0.5em;
+}
+
+.burger-bar {
+  width: 28px;
+  height: 4px;
+  background-color: #fff;
+  margin: 3px 0;
+  border-radius: 2px;
+  transition: 0.3s;
+}
+
+.app-bar-nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  width: 250px;
+  background: var(--secondary-color);
+  box-shadow: var(--shadow);
+  padding: 64px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  transform: translateX(-100%);
+  transition: transform 0.3s ease;
+  z-index: 10;
+  border-right: 1px solid var(--border-color);
+}
+
+.app-bar-nav.open {
+  transform: translateX(0);
+}
+
+.app-bar-nav a {
+  color: var(--text-color);
+  text-decoration: none;
+  margin: 8px 0;
+  font-size: 1rem;
+  padding: 12px;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.app-bar-nav a:hover {
+  background: #4a5568;
+}
+
+.app-bar-nav-button {
+  background: none;
+  border: none;
+  color: var(--text-color);
+  text-decoration: none;
+  margin: 8px 0;
+  font-size: 1rem;
+  padding: 12px;
+  border-radius: 4px;
+  transition: background 0.2s;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+}
+
+.app-bar-nav-button:hover {
+  background: #4a5568;
+}
+
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 9;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .app-bar {
+    padding: 0 16px;
+    height: 56px;
+  }
+
+  .app-bar-title {
+    font-size: 1.3rem;
+  }
+
+  .app-bar-logo {
+    height: 60px;
+    margin-right: 12px;
+  }
+
+  .burger-menu {
+    width: 32px;
+    height: 32px;
+    margin-left: auto;
+  }
+
+  .burger-bar {
+    width: 24px;
+    height: 3px;
+  }
+
+  .app-bar-nav {
+    top: 56px;
+    right: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .app-bar-title {
+    font-size: 1.1rem;
+  }
+
+  .app-bar-logo {
+    height: 50px;
+  }
+}

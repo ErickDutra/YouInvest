@@ -1,0 +1,131 @@
+.fiis-page {
+  padding: 24px;
+  background-color: none;
+}
+
+.fiis-cards-grid {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 32px;
+}
+
+.fiis-card {
+  flex: 1 1 0;
+  background: var(--secondary-color);
+  border-radius: 12px;
+  padding: 24px 16px;
+  box-shadow: var(--shadow);
+  text-align: center;
+  border: 1px solid var(--border-color);
+}
+
+.fiis-card-title {
+  display: block;
+  font-size: 1rem;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.fiis-card-value {
+  display: block;
+  font-size: 1.4rem;
+  font-weight: bold;
+  color: var(--text-color);
+}
+
+.fiis-card-variation.positivo {
+  color: var(--positive-color);
+}
+
+.fiis-card-variation.negativo {
+  color: var(--negative-color);
+}
+
+.fiis-table-section {
+  background: var(--secondary-color);
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border-color);
+}
+
+.fiis-filtro {
+  margin-bottom: 16px;
+  padding: 8px 12px;
+  border-radius: 4px;
+  border: 1px solid var(--border-color);
+  width: 220px;
+  font-size: 1rem;
+  background: var(--secondary-color);
+  color: var(--text-color);
+}
+
+.fiis-table {
+  width: 100%;
+  border-collapse: collapse;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+
+.fiis-table th,
+.fiis-table td {
+  border: 1px solid var(--border-color);
+  padding: 12px;
+  text-align: center;
+  color: var(--text-color);
+}
+
+.fiis-table th {
+  background: #2d3748;
+  font-weight: bold;
+  color: var(--text-color);
+}
+
+.fiis-table tbody tr:nth-child(odd) {
+  background: #2a2e37;
+}
+
+.fiis-table tbody tr:hover {
+  background: #3a3f4b;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .fiis-page {
+    padding: 16px;
+  }
+
+  .fiis-cards-grid {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .fiis-card {
+    padding: 16px 12px;
+  }
+
+  .fiis-card-value {
+    font-size: 1.2rem;
+  }
+
+  .fiis-table-section {
+    padding: 16px;
+  }
+
+  .fiis-table th,
+  .fiis-table td {
+    padding: 8px;
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .fiis-filtro {
+    width: 100%;
+  }
+
+  .fiis-table {
+    font-size: 0.8rem;
+  }
+}
