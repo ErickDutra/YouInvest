@@ -1,6 +1,8 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import "../styles/Crypto.css";
+import { getTop10Cryptos, getPricesChart } from '../services/Cryptos_get_all'
+import type { CryptoData, ChartData } from '../services/Cryptos_get_all'
 
 interface CardData {
   title: string;
@@ -9,19 +11,6 @@ interface CardData {
   variationType: string;
 }
 
-interface TopMove {
-  nome: string;
-  variacao: string;
-}
-
-interface CryptoData {
-  nome: string;
-  simbolo: string;
-  preco: string;
-  variacao24h: string;
-  marketCap: string;
-  volume24h: string;
-}
 
 const cardsLinha1: CardData[] = [
   { title: "Market Cap Total", value: "$2.5T", variation: "+1.20%", variationType: "positivo" },
@@ -30,61 +19,54 @@ const cardsLinha1: CardData[] = [
   { title: "Fear & Greed", value: "Greed", variation: "", variationType: "" }
 ];
 
-const topMoves: TopMove[] = [
-  { nome: "Ethereum", variacao: "+5.2%" },
-  { nome: "Binance Coin", variacao: "+3.8%" },
-  { nome: "Cardano", variacao: "-2.1%" },
-  { nome: "Solana", variacao: "+7.5%" }
-];
-
-const bitcoinData = [
-  { time: '00:00', price: 59000 },
-  { time: '04:00', price: 59500 },
-  { time: '08:00', price: 60000 },
-  { time: '12:00', price: 59800 },
-  { time: '16:00', price: 60200 },
-  { time: '20:00', price: 60000 },
-  { time: '24:00', price: 60500 }
-];
-
-const cryptoData: CryptoData[] = [
-  {
-    nome: "Bitcoin",
-    simbolo: "BTC",
-    preco: "$60,000",
-    variacao24h: "+2.45%",
-    marketCap: "$1.2T",
-    volume24h: "$30B"
-  },
-  {
-    nome: "Ethereum",
-    simbolo: "ETH",
-    preco: "$4,200",
-    variacao24h: "+5.20%",
-    marketCap: "$500B",
-    volume24h: "$20B"
-  },
-  {
-    nome: "Binance Coin",
-    simbolo: "BNB",
-    preco: "$550",
-    variacao24h: "+3.80%",
-    marketCap: "$80B",
-    volume24h: "$5B"
-  }
-  // ...adicione mais criptos conforme necessário
-];
-
 const Crypto: React.FC = () => {
   const [filtro, setFiltro] = useState("");
+  const [cryptoData, setCryptoData] = useState<CryptoData[]>([]); 
+  const [chartData, setChartData] = useState<ChartData[]>([]);
+  const [loading, setLoading] = useState(true); 
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [cryptos, chart] = await Promise.all([
+          getTop10Cryptos(),
+          getPricesChart()
+        ]);
+        setCryptoData(cryptos);
+        setChartData(chart);
+      } catch (error) {
+        console.error("Erro ao buscar dados:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []); 
 
   const cryptoFiltradas = useMemo(() =>
     cryptoData.filter(
       crypto =>
-        crypto.nome.toLowerCase().includes(filtro.toLowerCase()) ||
-        crypto.simbolo.toLowerCase().includes(filtro.toLowerCase())
-    ), [filtro]
+        crypto.name.toLowerCase().includes(filtro.toLowerCase()) ||
+        crypto.symbol.toLowerCase().includes(filtro.toLowerCase())
+    ), [filtro, cryptoData]
   );
+
+  const topMoves = useMemo(() => 
+    [...cryptoData]
+      .sort((a: CryptoData, b: CryptoData) => b.price_change_percentage_24h - a.price_change_percentage_24h)
+      .slice(0, 5)
+      .map((crypto: CryptoData) => ({
+        nome: crypto.name,
+        variacao: `${crypto.price_change_percentage_24h >= 0 ? '+' : ''}${crypto.price_change_percentage_24h.toFixed(2)}%`
+      })), [cryptoData]
+  )
+
+  const minPrice = useMemo(() => Math.min(...chartData.map(d => d.price)) - 2000, [chartData]);
+  const maxPrice = useMemo(() => Math.max(...chartData.map(d => d.price)) + 2000, [chartData]);
+
+  if (loading) {
+    return <div>Carregando...</div>; 
+  }
 
   return (
     <div className="crypto-page">
@@ -104,11 +86,17 @@ const Crypto: React.FC = () => {
           <div className="crypto-chart">
             <h3>Gráfico Bitcoin 24h</h3>
             <ResponsiveContainer width="100%" height={200}>
-              <LineChart data={bitcoinData}>
+              <LineChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="time" />
-                <YAxis />
-                <Tooltip />
+                <YAxis 
+                  domain={[minPrice, maxPrice]}
+                  tickFormatter={(value) => `$${value.toLocaleString()}`}
+                />
+                <Tooltip 
+                  formatter={(value: number) => [`$${value.toLocaleString()}`, 'Preço']}
+                  labelFormatter={(label) => `Hora: ${label}`}
+                />
                 <Line type="monotone" dataKey="price" stroke="#8884d8" />
               </LineChart>
             </ResponsiveContainer>
@@ -116,7 +104,7 @@ const Crypto: React.FC = () => {
           <div className="crypto-top-moves">
             <h3>Top Moves</h3>
             <ul>
-              {topMoves.map((move) => (
+              {topMoves.map((move: { nome: string; variacao: string }) => (
                 <li key={move.nome}>
                   {move.nome}: <span className={move.variacao.startsWith('+') ? 'positivo' : 'negativo'}>{move.variacao}</span>
                 </li>
@@ -148,13 +136,15 @@ const Crypto: React.FC = () => {
           </thead>
           <tbody>
             {cryptoFiltradas.map((crypto) => (
-              <tr key={crypto.simbolo}>
-                <td>{crypto.nome}</td>
-                <td>{crypto.simbolo}</td>
-                <td>{crypto.preco}</td>
-                <td className={crypto.variacao24h.startsWith('+') ? 'positivo' : 'negativo'}>{crypto.variacao24h}</td>
-                <td>{crypto.marketCap}</td>
-                <td>{crypto.volume24h}</td>
+              <tr key={crypto.id}>
+                <td>{crypto.name}</td>
+                <td>{crypto.symbol.toUpperCase()}</td>
+                <td>${crypto.current_price.toLocaleString()}</td>
+                <td className={crypto.price_change_percentage_24h >= 0 ? 'positivo' : 'negativo'}>
+                  {crypto.price_change_percentage_24h.toFixed(2)}%
+                </td>
+                <td>${crypto.market_cap.toLocaleString()}</td>
+                <td>${crypto.total_volume.toLocaleString()}</td>
               </tr>
             ))}
           </tbody>
