@@ -27,6 +27,18 @@ export interface CryptoData {
   last_updated: string;
 }
 
+export interface GlobalInfo{
+    active_cryptocurrencies : number;
+    upcoming_icos : number;
+    ongoing_icos : number;
+    ended_icos : number;
+    markets : number;
+    total_market_cap : [];
+    total_volume : [];
+    market_cap_percentage : [];
+    market_cap_change_percentage_24h_usd : number;
+    updated_at :number;
+}
 
 
 export async function getTop10Cryptos(): Promise<CryptoData[]> {
@@ -71,3 +83,22 @@ export async function getPricesChart(): Promise<ChartData[]> {
   }
 }
 
+export async function getGlobalMarketInfo(): Promise<GlobalInfo|undefined> {
+  try {
+    const response = await fetch('http://localhost:3333/cryptos/global');
+    if (!response.ok) {
+      throw new Error('Erro ao buscar dados da API da CoinGecko');
+    }
+    const responseJson = await response.json();
+    const data: GlobalInfo = responseJson.data
+    return data;
+  } catch (error) {
+    console.error('Erro ao buscar criptos:', error);
+    return undefined;
+  }
+}
+
+export interface ChartData {
+  time: string;
+  price: number;
+}

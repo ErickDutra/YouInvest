@@ -1,23 +1,13 @@
-import React, { useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import "../styles/Acao.css";
+import getAcoes from "../services/acoes_get_all";
+import type { AcaoResult } from "../services/acoes_get_all";
 
 interface CardData {
   title: string;
   value: string;
   variation: string;
   variationType: string;
-}
-
-interface AcaoData {
-  score: number;
-  nome: string;
-  preco: string;
-  pe: string;
-  pvp: string;
-  roe: string;
-  divYeld: string;
-  margem: string;
-  endiv: string;
 }
 
 const cards: CardData[] = [
@@ -27,52 +17,39 @@ const cards: CardData[] = [
   { title: "Ações em Baixa", value: "13", variation: "", variationType: "" }
 ];
 
-const acoesData: AcaoData[] = [
-  {
-    score: 9.2,
-    nome: "PETR4",
-    preco: "R$ 38,50",
-    pe: "5,2",
-    pvp: "1,1",
-    roe: "18%",
-    divYeld: "7,5%",
-    margem: "22%",
-    endiv: "0,8"
-  },
-  {
-    score: 8.7,
-    nome: "VALE3",
-    preco: "R$ 67,20",
-    pe: "4,8",
-    pvp: "1,3",
-    roe: "21%",
-    divYeld: "8,2%",
-    margem: "25%",
-    endiv: "0,6"
-  },
-  {
-    score: 7.9,
-    nome: "ITUB4",
-    preco: "R$ 29,10",
-    pe: "8,1",
-    pvp: "1,9",
-    roe: "16%",
-    divYeld: "5,1%",
-    margem: "19%",
-    endiv: "1,2"
-  }
-  // ...adicione mais ações conforme necessário
-];
+// Tipo utilizado para exibição local incluindo o código extraído da url
+type DisplayAcao = AcaoResult & { codigo: string };
 
 const Acoes: React.FC = () => {
   const [filtro, setFiltro] = useState("");
+  const [acoes, setAcoes] = useState<DisplayAcao[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+    const load = async () => {
+      setLoading(true);
+      try {
+        const res = await getAcoes();
+        console.log(res)
+        const withCodigo: DisplayAcao[] = res.map((item) => {
+          const codigo = extractCodigoFromUrl(item.url) || "-";
+          return { ...item, codigo };
+        });
+        if (mounted) setAcoes(withCodigo);
+      } catch {
+        console.log('error')
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+    load();
+    return () => { mounted = false; };
+  }, []);
 
   const acoesFiltradas = useMemo(() =>
-    acoesData.filter(
-      acao =>
-        acao.nome.toLowerCase().includes(filtro.toLowerCase())
-    ), [filtro]
-  );
+    acoes.filter(acao => acao.codigo.toLowerCase().includes(filtro.toLowerCase()))
+  , [acoes, filtro]);
 
   return (
     <div className="acoes-page">
@@ -97,39 +74,70 @@ const Acoes: React.FC = () => {
           className="acoes-filtro"
           aria-label="Filtrar ações por nome"
         />
-        <table className="acoes-table">
-          <thead>
-            <tr>
-              <th>Score</th>
-              <th>Ativo</th>
-              <th>Preço</th>
-              <th>P/L</th>
-              <th>P/VP</th>
-              <th>ROE</th>
-              <th>Div. Yield</th>
-              <th>Margem</th>
-              <th>Endiv.</th>
-            </tr>
-          </thead>
-          <tbody>
-            {acoesFiltradas.map((acao) => (
-              <tr key={acao.nome}>
-                <td>{acao.score}</td>
-                <td>{acao.nome}</td>
-                <td>{acao.preco}</td>
-                <td>{acao.pe}</td>
-                <td>{acao.pvp}</td>
-                <td>{acao.roe}</td>
-                <td>{acao.divYeld}</td>
-                <td>{acao.margem}</td>
-                <td>{acao.endiv}</td>
+
+        {loading ? (
+          <p>Carregando ações...</p>
+        ) : (
+          <table className="acoes-table">
+            <thead>
+              <tr>
+                <th>Ativo</th>
+                <th>Cotação</th>
+                <th>P/VP</th>
+                <th>Variação 12m</th>
+                <th>P/L</th>
+                <th>Div. Yield</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {acoesFiltradas.map((acao) => (
+                <tr key={acao.codigo}>
+                  <td>{acao.codigo}</td>
+                  <td>{formatCurrencyOrRaw(acao.cotacao)}</td>
+                  <td>{formatNumberOrRaw(acao.pvp)}</td>
+                  <td>{formatNumberOrRaw(acao.variacao_12m)}</td>
+                  <td>{formatNumberOrRaw(acao.pl)}</td>
+                  <td>{formatNumberOrRaw(acao.dy)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
     </div>
   );
 };
+
+function extractCodigoFromUrl(url: string | undefined): string | null {
+  if (!url) return null;
+  try {
+    const u = new URL(url);
+    const codigo = u.searchParams.get('codigo');
+    if (codigo) {
+      return codigo.toUpperCase();
+    }
+    // fallback: usar último segmento do path
+    const parts = u.pathname.split('/').filter(Boolean);
+    if (parts.length) {
+      return parts.at(-1)!.toUpperCase();
+    }
+    return null;
+  } catch {
+    // se não for URL válida, tenta extrair texto após '='
+    const q = url.split('codigo=')[1];
+    if (q) return q.split('&')[0].toUpperCase();
+    return null;
+  }
+}
+
+function formatCurrencyOrRaw(field: { raw: string | null; value: number | null }) {
+  if (field.value != null) return `R$ ${field.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
+  return field.raw ?? '-';
+}
+
+function formatNumberOrRaw(field: { raw: string | null; value: number | null }) {
+  if (field.value != null) return field.value.toString();
+  return field.raw ?? '-';
+}
 
 export default Acoes;

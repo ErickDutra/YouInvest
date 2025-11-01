@@ -22,7 +22,8 @@ const AppBar: React.FC = () => {
             <nav className={`app-bar-nav ${menuOpen ? 'open' : ''}`}>
                 <Link to="/" onClick={() => setMenuOpen(false)}>Home</Link>
                 <Link to="/monitor" onClick={() => setMenuOpen(false)}>Monitor</Link>
-                <Link to="/indicadores" onClick={() => setMenuOpen(false)}>indicadores</Link>
+                <Link to="/aprendizado" onClick={() => setMenuOpen(false)}>Aprendizado</Link>
+                <Link to="/profile" onClick={() => setMenuOpen(false)}>Profile</Link>
             </nav>
             {menuOpen && <div className="overlay" onClick={() => setMenuOpen(false)}></div>}
         </header>

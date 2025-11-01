@@ -1,0 +1,109 @@
+.aprendizado-page {
+  padding: 20px;
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  color: #0f172a;
+}
+
+.mini-appbar {
+  max-width: 1000px;
+  margin: 0 auto;
+  background: linear-gradient(90deg,#f8fafc,#fff);
+  border: 1px solid #e6eef8;
+  padding: 12px 18px;
+  border-radius: 10px;
+  text-align: center;
+  font-weight: 600;
+}
+
+  .aprendizado-page .mini-appbar {
+    max-width: 1000px;
+    margin: 0 auto;
+    background: linear-gradient(90deg,#f8fafc,#fff);
+    border: 1px solid #e6eef8;
+    padding: 12px 18px;
+    border-radius: 10px;
+    text-align: center;
+    font-weight: 600;
+    margin-bottom: 18px;
+  }
+
+  .aprendizado-page .aprendizado-container {
+    max-width: 1000px;
+    margin: 0 auto;
+  }
+
+  .aprendizado-page .tabs { display:flex; gap:8px; margin-bottom:12px; }
+  .aprendizado-page .tab { padding:8px 14px; border-radius:8px; border:1px solid transparent; background:#f8fafc; cursor:pointer; }
+  .aprendizado-page .tab.active { background:#eef2ff; border-color:#c7d2fe; color:#3730a3; font-weight:600; }
+
+  .aprendizado-page .subtitle { color:#475569; margin-bottom:12px }
+  .aprendizado-page .cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 14px;
+    align-items: start;
+  }
+
+  /* cards como botões interativos */
+  .aprendizado-page .card {
+    background:#2e3748;
+    border-radius: 12px;
+    padding: 14px;
+    border: 1px solid #eef2ff;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.03);
+    display: block;
+    text-align: left;
+    cursor: pointer;
+    transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+    max-width: 90%;
+    max-height: 70%;
+    min-height: 70%;
+  }
+  .aprendizado-page .card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 14px 40px rgba(15, 23, 42, 0.08);
+    border-color: #dbeafe;
+  }
+  .aprendizado-page .card:active { transform: translateY(-2px); }
+  .aprendizado-page .card:focus {
+    outline: none;
+    box-shadow: 0 0 0 4px rgba(79,70,229,0.12);
+  }
+
+  .aprendizado-page .card-meta { color: #64748b; font-size: 13px; margin-bottom: 10px }
+  .aprendizado-page .card-actions { display:flex; gap:8px }
+  .aprendizado-page .btn-primary { background: #4f46e5; color: #fff; border: none; padding: 8px 10px; border-radius: 8px; cursor: pointer }
+  .aprendizado-page .btn-primary:hover { filter: brightness(0.98); }
+  .aprendizado-page .btn-ghost { background: #4f46e5; color: #fff; border: none; padding: 8px 10px; border-radius: 8px; cursor: pointer }
+
+  /* suporte para cards que são botões: remover estilos nativos do botão */
+  .aprendizado-page .cards button.card {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    background: inherit;
+  }
+
+  /* ajuste para textos longos e compatibilidade */
+  .aprendizado-page .card-title {
+    font-weight: 700;
+    margin-bottom: 6px;
+    font-size: 16px;
+    color: rgb(250, 251, 253);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    line-clamp: 2;
+  }
+
+  @media (max-width: 640px) {
+    .aprendizado-page .cards { gap: 10px; }
+    .aprendizado-page .card { padding: 12px; border-radius: 10px; }
+  }
+
+  .aprendizado-page .books-placeholder { padding:18px; border:1px dashed #e2e8f0; border-radius:8px; color:#475569 }
+
+  .aprendizado-container h3{
+    color: rgb(250, 251, 253);
+  }

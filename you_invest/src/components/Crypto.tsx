@@ -16,7 +16,6 @@ const cardsLinha1: CardData[] = [
   { title: "Market Cap Total", value: "$2.5T", variation: "+1.20%", variationType: "positivo" },
   { title: "Volume 24h", value: "$150B", variation: "+0.85%", variationType: "positivo" },
   { title: "BTC Dominance", value: "55%", variation: "-0.50%", variationType: "negativo" },
-  { title: "Fear & Greed", value: "Greed", variation: "", variationType: "" }
 ];
 
 const Crypto: React.FC = () => {
