@@ -47,3 +47,29 @@ export async function getPricesCoins(): Promise<any> {
   }
 }
 
+
+export async function getMarketInfo(): Promise<any> {
+  try {
+    const response = await fetch(
+      `https://api.coingecko.com/api/v3/global`,
+      {
+        method: "GET",
+        headers: {
+          "x-cg-demo-api-key": process.env.COINGECKO_API_KEY,
+        },
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Erro na API: ${response.status}`);
+    }
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error("Erro ao buscar dados da criptomoeda:", error);
+    throw error;
+  }
+}
+
+
+

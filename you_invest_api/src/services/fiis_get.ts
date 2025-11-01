@@ -1,0 +1,74 @@
+import axios from 'axios';
+import * as cheerio from 'cheerio';
+import type { AnyNode } from 'domhandler';
+
+const BASE = 'https://investidor10.com.br/fiis';
+
+export type FiiScrapeResult = {
+  cotacao: { raw: string | null; value: number | null };
+  pvp: { raw: string | null; value: number | null };
+  variacao_12m: { raw: string | null; value: number | null };
+  dy: { raw: string | null; value: number | null };
+  liquidez: { raw: string | null; value: number | null };
+  url: string;
+};
+
+function cleanRaw(elText?: cheerio.Cheerio<AnyNode> | string | null) {
+  if (!elText) return null;
+  if (typeof elText !== 'string') return String(elText).trim();
+  return elText.trim();
+}
+
+function parseBRNumber(raw?: string | null) {
+  if (!raw) return null;
+  const s = raw.replace(/R\$/g, '').replace(/%/g, '').replace(/\s/g, '');
+  const normalized = s.replace(/\./g, '').replace(/,/g, '.');
+  const n = Number(normalized);
+  return Number.isFinite(n) ? n : null;
+}
+
+export async function getFii(ticker: string): Promise<FiiScrapeResult> {
+  const url = `${BASE}/${encodeURIComponent(ticker)}/`;
+  const res = await axios.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' } });
+  const $ = cheerio.load(res.data);
+
+  const result: FiiScrapeResult = {
+    cotacao: { raw: null, value: null },
+    pvp: { raw: null, value: null },
+    variacao_12m: { raw: null, value: null },
+    dy: { raw: null, value: null },
+    liquidez: { raw: null, value: null },
+    url,
+  };
+
+  $('#cards-ticker ._card').each((_: number, card: AnyNode) => {
+    const headerTitle = $(card).find('._card-header span[title]').attr('title') || $(card).find('._card-header span').text();
+    const bodySpan = $(card).find('._card-body span.value');
+    const bodySpanAny = bodySpan.length ? bodySpan : $(card).find('._card-body span').first();
+    const raw = cleanRaw(bodySpanAny.text());
+
+    if (!headerTitle) return;
+    const key = headerTitle.toLowerCase().trim();
+
+    if (key.includes('cotação') || key.includes('cotacao') || key.includes('cot')) {
+      result.cotacao.raw = raw;
+      result.cotacao.value = parseBRNumber(raw);
+    } else if (key.includes('dividend') || key.includes('dy')) {
+      result.dy.raw = raw;
+      result.dy.value = parseBRNumber(raw);
+    } else if (key.includes('p/vp') || key.includes('pvp')) {
+      result.pvp.raw = raw;
+      result.pvp.value = parseBRNumber(raw);
+    } else if (key.includes('liquidez')) {
+      result.liquidez.raw = raw;
+      result.liquidez.value = parseBRNumber(raw);
+    } else if (key.includes('variação') || key.includes('variacao') || key.includes('varia')) {
+      result.variacao_12m.raw = raw;
+      result.variacao_12m.value = parseBRNumber(raw);
+    }
+  });
+
+  return result;
+}
+
+export const lista_fiis = ['ggrc11', 'hgre11', 'knri11'];
