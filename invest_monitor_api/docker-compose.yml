@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  postgres-custom:
+    image: postgres:latest
+    container_name: postgres_custom
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: senha
+      POSTGRES_DB: youInvest
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:

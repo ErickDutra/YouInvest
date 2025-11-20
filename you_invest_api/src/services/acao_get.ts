@@ -30,6 +30,9 @@ function parseBRNumber(raw?: string | null) {
 export async function getAcao(ticker: string): Promise<AcaoScrapeResult> {
 	const url = `${BASE}/${encodeURIComponent(ticker)}/`;
 	const res = await axios.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' } });
+	if (res.status !== 200) {
+		throw new Error(`Ticker ${ticker} não encontrado ou indisponível (status ${res.status})`);
+	}
 	const $ = cheerio.load(res.data);
 
 	const result: AcaoScrapeResult = {

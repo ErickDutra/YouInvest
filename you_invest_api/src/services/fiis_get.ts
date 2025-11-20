@@ -28,11 +28,12 @@ function parseBRNumber(raw?: string | null) {
 }
 
 export async function getFii(ticker: string): Promise<FiiScrapeResult> {
-  const url = `${BASE}/${encodeURIComponent(ticker)}/`;
-  const res = await axios.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' } });
-  const $ = cheerio.load(res.data);
-
-  const result: FiiScrapeResult = {
+	const url = `${BASE}/${encodeURIComponent(ticker)}/`;
+	const res = await axios.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' } });
+	if (res.status !== 200) {
+		throw new Error(`FII ${ticker} não encontrado ou indisponível (status ${res.status})`);
+	}
+	const $ = cheerio.load(res.data);  const result: FiiScrapeResult = {
     cotacao: { raw: null, value: null },
     pvp: { raw: null, value: null },
     variacao_12m: { raw: null, value: null },

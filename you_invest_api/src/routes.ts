@@ -34,9 +34,14 @@ export async function routes(fastify: FastifyInstance, options: FastifyPluginOpt
             const data = await getAcao(String(ticker));
             return data;
         } catch (err: any) {
+            const message = err?.message ?? String(err);
+            if (message.includes('não encontrado') || message.includes('indisponível')) {
+                reply.status(404);
+                return { error: `Ação ${ticker} não encontrada ou indisponível` };
+            }
             request.log?.error(err);
             reply.status(500);
-            return { error: 'Erro ao buscar dados da ação', details: err?.message ?? String(err) };
+            return { error: 'Erro ao buscar dados da ação', details: message };
         }
     })
 
@@ -52,9 +57,14 @@ export async function routes(fastify: FastifyInstance, options: FastifyPluginOpt
             const data = await getFii(String(ticker));
             return data;
         } catch (err: any) {
+            const message = err?.message ?? String(err);
+            if (message.includes('não encontrado') || message.includes('indisponível')) {
+                reply.status(404);
+                return { error: `FII ${ticker} não encontrado ou indisponível` };
+            }
             request.log?.error(err);
             reply.status(500);
-            return { error: 'Erro ao buscar dados do FII', details: err?.message ?? String(err) };
+            return { error: 'Erro ao buscar dados do FII', details: message };
         }
     })
 }

@@ -7,6 +7,7 @@ import MonitorPage from './pages/MonitorPage'
 import Calculadora from './pages/calculadora.tsx'
 import Aprendizado from './pages/aprendizado'
 import Profile from './pages/profile'
+import Carteira from './pages/carteira'
 
 
 
@@ -17,8 +18,9 @@ function App() {
       <Routes>
         <Route path="/" element={<Calculadora />} />
         <Route path="/monitor" element={<MonitorPage />} />
-  <Route path="/aprendizado" element={<Aprendizado />} />
-  <Route path="/profile" element={<Profile />} />
+        <Route path="/aprendizado" element={<Aprendizado />} />
+        <Route path="/profile" element={<Profile />} />
+        <Route path="/carteira" element={<Carteira />} />
       </Routes>
     </>
   );

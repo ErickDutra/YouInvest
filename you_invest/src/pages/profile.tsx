@@ -41,8 +41,7 @@ export default function Profile() {
 
       <section className="profile-actions">
         <button className="btn-primary" onClick={() => navigate('/aprendizado')}>Meus Cursos</button>
-        <button className="btn-ghost" onClick={() => navigate('/indicadores')}>Minhas Ações</button>
-        <button className="btn-ghost" onClick={() => navigate('/calculadora')}>Calculadora</button>
+        <button className="btn-primary" onClick={() => navigate('/carteira')}>Minhas Ações</button>
         <button className="btn-logout" onClick={() => alert('Saindo...')}>Sair</button>
       </section>
     </div>
