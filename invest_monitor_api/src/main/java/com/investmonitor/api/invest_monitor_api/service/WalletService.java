@@ -2,6 +2,7 @@ package com.investmonitor.api.invest_monitor_api.service;
 
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -9,6 +10,7 @@ import org.springframework.stereotype.Service;
 
 import com.investmonitor.api.invest_monitor_api.dto.WalletDto;
 import com.investmonitor.api.invest_monitor_api.models.Wallet;
+import com.investmonitor.api.invest_monitor_api.models.enums.StatusCommodity;
 import com.investmonitor.api.invest_monitor_api.repository.WalletRepository;
 
 @Service
@@ -54,5 +56,13 @@ public class WalletService {
   
     public void delete(String id) {
         repository.deleteById(id);
+    }
+
+    public Map<String, Integer> getUserPortfolio(String userId) {
+        return repository.findByUserId(userId).stream()
+            .collect(Collectors.groupingBy(
+                Wallet::getCode,
+                Collectors.summingInt(w -> w.getStatus() ==StatusCommodity.BUY ? w.getQuantity() : -w.getQuantity())
+            ));
     }
 }

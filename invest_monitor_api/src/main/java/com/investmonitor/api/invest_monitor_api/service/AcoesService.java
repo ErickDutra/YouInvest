@@ -1,9 +1,14 @@
 package com.investmonitor.api.invest_monitor_api.service;
 
+import java.util.Date;
 import java.util.List;
 
 import com.investmonitor.api.invest_monitor_api.dto.AcoesDto;
 import com.investmonitor.api.invest_monitor_api.dto.ActionDto;
+import com.investmonitor.api.invest_monitor_api.dto.ActionSendDto;
+import com.investmonitor.api.invest_monitor_api.dto.BuyAcoesDto;
+import com.investmonitor.api.invest_monitor_api.dto.FiisSendDto;
+import com.investmonitor.api.invest_monitor_api.integration.ActivesIntegrationService;
 
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -16,25 +21,33 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.interceptor.TransactionAspectSupport;
 
 import com.investmonitor.api.invest_monitor_api.models.Acoes;
+import com.investmonitor.api.invest_monitor_api.models.Wallet;
+import com.investmonitor.api.invest_monitor_api.models.enums.CommodityType;
+import com.investmonitor.api.invest_monitor_api.models.enums.StatusCommodity;
 import com.investmonitor.api.invest_monitor_api.repository.AcoesRepository;
+import com.investmonitor.api.invest_monitor_api.repository.WalletRepository;
 
 @Service
 public class AcoesService {
 
     private static final Logger log = LoggerFactory.getLogger(AcoesService.class);
 
-    private final AcoesRepository repository;
+    private final AcoesRepository acoesRepository;
+    private final WalletRepository walletRepository;
+  private final ActivesIntegrationService actionIntegration; 
 
-    public AcoesService(AcoesRepository repository) {
-        this.repository = repository;
+    public AcoesService(AcoesRepository acoesRepository, WalletRepository walletRepository,ActivesIntegrationService actionIntegration) {
+        this.acoesRepository = acoesRepository;
+        this.walletRepository = walletRepository; 
+        this.actionIntegration =actionIntegration;
     }
 
     public List<ActionDto> findAll() {
-        return repository.findAll().stream().map(ActionDto::fromEntity).collect(Collectors.toList());
+        return acoesRepository.findAll().stream().map(ActionDto::fromEntity).collect(Collectors.toList());
     }
 
     public AcoesDto findById(String id) {
-        Optional<Acoes> opt = repository.findById(id);
+        Optional<Acoes> opt = acoesRepository.findById(id);
         return opt.map(AcoesDto::fromEntity).orElseThrow(() -> new RuntimeException("Acoes not found: " + id));
     }
 
@@ -51,11 +64,11 @@ public class AcoesService {
                     log.warn("dto com code inválido: {}", acao);
                     continue;
                 }
-                if (repository.findByCode(acao.code()) != null) {
+                if (acoesRepository.findByCode(acao.code()) != null) {
                     continue;
                 }
                 Acoes entity = acao.toEntity();
-                repository.save(entity);
+                acoesRepository.save(entity);
             }
             return ResponseEntity.ok("lista cadastrada com sucesso");
         } catch (Exception e) {
@@ -72,11 +85,11 @@ public class AcoesService {
             if (dto.code() == null || dto.code().isBlank()) {
                 return ResponseEntity.badRequest().body("code inválido");
             }
-            if (repository.findByCode(dto.code()) != null) {
+            if (acoesRepository.findByCode(dto.code()) != null) {
                 return ResponseEntity.badRequest().body("Ja existe na base!");
             }
             Acoes entity = dto.toEntity();
-            repository.save(entity);
+            acoesRepository.save(entity);
             return ResponseEntity.ok("cadastrado com sucesso");
         } catch (Exception e) {
             log.error("Erro em create", e);
@@ -86,14 +99,72 @@ public class AcoesService {
     }
 
     public AcoesDto update(String id, AcoesDto dto) {
-        Acoes existing = repository.findById(id).orElseThrow(() -> new RuntimeException("Acoes not found: " + id));
+        Acoes existing = acoesRepository.findById(id).orElseThrow(() -> new RuntimeException("Acoes not found: " + id));
         existing.setCode(dto.code());
-        Acoes saved = repository.save(existing);
+        Acoes saved = acoesRepository.save(existing);
         return AcoesDto.fromEntity(saved);
     }
 
     public void delete(String id) {
-        repository.deleteById(id);
+        acoesRepository.deleteById(id);
     }
 
+    @Transactional
+    public ResponseEntity<String> buyAction(BuyAcoesDto buy){
+        Wallet wallet = new Wallet();
+        Acoes acao = acoesRepository.findByCode(buy.acoes().getCode());
+        if(acao.getType().equals(CommodityType.FIIS)
+        ){
+        FiisSendDto fiis = actionIntegration.getFiis(acao.getCode());
+        wallet.setPrice(fiis.cotacao()); 
+        wallet.setType(CommodityType.FIIS);
+    }else{
+        ActionSendDto action = actionIntegration.getAction(acao.getCode());
+        wallet.setPrice(action.cotacao().value()); 
+        wallet.setType(CommodityType.ACOES);
+    }
+    wallet.setCode(acao.getCode());
+    wallet.setDtCreated(new Date());
+    wallet.setQuantity(buy.quantity());
+    wallet.setUserId(buy.userId());
+    wallet.setStatus(StatusCommodity.BUY);
+    walletRepository.save(wallet);
+    return ResponseEntity.ok("Compra realizada com sucesso!");
+    }   
+
+
+    @Transactional
+    public ResponseEntity<String> sellAction(BuyAcoesDto buy){
+        Acoes acao = acoesRepository.findByCode(buy.acoes().getCode());
+        if (acao == null) {
+            return ResponseEntity.badRequest().body("Ação não encontrada");
+        }
+
+  
+        List<Wallet> wallets = walletRepository.findByUserIdAndCode(buy.userId(), buy.acoes().getCode());
+        int saldo = wallets.stream()
+            .mapToInt(w -> w.getStatus() == StatusCommodity.BUY ? w.getQuantity() : -w.getQuantity())
+            .sum();
+        if (saldo < buy.quantity()) {
+            return ResponseEntity.badRequest().body("Saldo insuficiente para venda");
+        }
+
+        Wallet wallet = new Wallet();
+        if(acao.getType().equals(CommodityType.FIIS)){
+            FiisSendDto fiis = actionIntegration.getFiis(acao.getCode());
+            wallet.setPrice(fiis.cotacao()); 
+            wallet.setType(CommodityType.FIIS);
+        }else{
+            ActionSendDto action = actionIntegration.getAction(acao.getCode());
+            wallet.setPrice(action.cotacao().value()); 
+            wallet.setType(CommodityType.ACOES);
+        }
+        wallet.setCode(acao.getCode());
+        wallet.setDtCreated(new Date());
+        wallet.setQuantity(buy.quantity());
+        wallet.setUserId(buy.userId());
+        wallet.setStatus(StatusCommodity.SELL);
+        walletRepository.save(wallet);
+        return ResponseEntity.ok("Venda realizada com sucesso!");
+    } 
 }

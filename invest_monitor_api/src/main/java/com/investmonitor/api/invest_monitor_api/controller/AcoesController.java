@@ -56,7 +56,7 @@ public class AcoesController {
     }
 
     @GetMapping("/get/{code}")
-    public ResponseEntity<ActionSendDto> getAll(@PathVariable String code){
+    public ResponseEntity<ActionSendDto> getAction(@PathVariable String code){
         return ResponseEntity.ok(actionIntegration.getAction(code));
     }
 

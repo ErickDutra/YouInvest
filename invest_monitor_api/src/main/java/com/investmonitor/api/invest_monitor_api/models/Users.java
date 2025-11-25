@@ -1,11 +1,5 @@
 package com.investmonitor.api.invest_monitor_api.models;
 
-import java.math.BigDecimal;
-import java.util.Date;
-
-import com.investmonitor.api.invest_monitor_api.models.enums.CommodityType;
-import com.investmonitor.api.invest_monitor_api.models.enums.StatusCommodity;
-
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -21,17 +15,15 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-@Table(name = "wallet")
-public class Wallet {
+@Table(name = "users")
+public class Users {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     String id;
-    Date dtCreated;
-    BigDecimal price;
-    String code;
-    Integer quantity;
-    StatusCommodity status;
-    CommodityType type;
-    String userId;
+
+    String email;
+    String password;
+    String name;
+
 }
