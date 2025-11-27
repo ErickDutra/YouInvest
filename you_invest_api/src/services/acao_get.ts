@@ -33,7 +33,6 @@ export async function getAcao(ticker: string): Promise<AcaoScrapeResult> {
 	try {
 		res = await axios.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' } });
 	} catch (err: any) {
-		// Se der erro (ex: 410, 404), retorna resultado vazio em vez de lançar erro
 		return {
 			cotacao: { raw: null, value: null },
 			pvp: { raw: null, value: null },
@@ -56,7 +55,6 @@ export async function getAcao(ticker: string): Promise<AcaoScrapeResult> {
 
 				$('#cards-ticker ._card').each((_: number, card: AnyNode) => {
 					const headerTitle = $(card).find('._card-header span[title]').attr('title') || $(card).find('._card-header span').text();
-		// Get first span in body (most values are inside a span)
 		const bodySpan = $(card).find('._card-body span.value');
 		const bodySpanAny = bodySpan.length ? bodySpan : $(card).find('._card-body span').first();
 		const raw = cleanRaw(bodySpanAny.text());

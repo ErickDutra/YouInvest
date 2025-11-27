@@ -79,16 +79,55 @@ function extractCodigoFromUrl(url: string | undefined): string | null {
 }
 
 function PieChart({ items }: { items: { label: string; value: number; color: string }[] }) {
+  console.log('Rendering PieChart with items:', items)
   const total = items.reduce((s, it) => s + it.value, 0)
+  console.log('Total value:', total)
   const size = 220
   const r = size / 2
   const cx = r
   const cy = r
 
+  if (total === 0) {
+    return (
+      <div className="carteira-pie">
+        <div style={{ width: size, height: size, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #ccc' }}>
+          Sem ativos
+        </div>
+        <div className="carteira-legend">
+          {items.map((it) => (
+            <div className="legend-item" key={it.label}>
+              <span className="legend-color" style={{ background: it.color }} />
+              <span className="legend-label">{it.label}</span>
+              <span className="legend-value">-</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  // Se apenas um item com 100%, desenhar círculo
+  if (items.length === 1 && items[0].value === total) {
+    return (
+      <div className="carteira-pie">
+        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+          <circle cx={cx} cy={cy} r={r} fill={items[0].color} stroke="#fff" strokeWidth={1} />
+        </svg>
+        <div className="carteira-legend">
+          <div className="legend-item" key={items[0].label}>
+            <span className="legend-color" style={{ background: items[0].color }} />
+            <span className="legend-label">{items[0].label}</span>
+            <span className="legend-value">100.0%</span>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   let angle = -90
 
   const paths = items.map((it, idx) => {
-    const value = total === 0 ? 0 : (it.value / total) * 360
+    const value = (it.value / total) * 360
     const startAngle = angle
     const endAngle = angle + value
     angle = endAngle
@@ -111,7 +150,7 @@ function PieChart({ items }: { items: { label: string; value: number; color: str
           <div className="legend-item" key={it.label}>
             <span className="legend-color" style={{ background: it.color }} />
             <span className="legend-label">{it.label}</span>
-            <span className="legend-value">{it.value === 0 ? '-' : formatCurrency(it.value)}</span>
+            <span className="legend-value">{`${((it.value / total) * 100).toFixed(1)}%`}</span>
           </div>
         ))}
       </div>
@@ -265,6 +304,8 @@ export default function CarteiraPage() {
     }
   }, [grouped])
 
+  const totalCarteira = totalByType.acoes + totalByType.fiis + totalByType.cryptos
+
   const pieItems = [
     { label: 'Ações', value: totalByType.acoes, color: colors.acao },
     { label: 'FIIs', value: totalByType.fiis, color: colors.fii },
@@ -342,6 +383,7 @@ export default function CarteiraPage() {
 
       <aside className="carteira-side">
         <h4>Composição da Carteira</h4>
+        <p>Total da Carteira: {formatCurrency(totalCarteira)}</p>
         <PieChart items={pieItems} />
       </aside>
 
