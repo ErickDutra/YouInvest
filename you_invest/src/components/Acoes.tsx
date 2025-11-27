@@ -1,6 +1,5 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import "../styles/Acao.css";
-import getAcoes from "../services/acoes_get_all";
 import type { AcaoResult } from "../services/acoes_get_all";
 
 interface CardData {
@@ -17,34 +16,24 @@ const cards: CardData[] = [
   { title: "Ações em Baixa", value: "13", variation: "", variationType: "" }
 ];
 
-// Tipo utilizado para exibição local incluindo o código extraído da url
-type DisplayAcao = AcaoResult & { codigo: string };
-
 const Acoes: React.FC = () => {
   const [filtro, setFiltro] = useState("");
-  const [acoes, setAcoes] = useState<DisplayAcao[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [acoes, setAcoes] = useState<(AcaoResult & { codigo: string })[]>([]);
 
   useEffect(() => {
-    let mounted = true;
-    const load = async () => {
-      setLoading(true);
+    const cached = localStorage.getItem('acoes_cache');
+    if (cached) {
       try {
-        const res = await getAcoes();
-        console.log(res)
-        const withCodigo: DisplayAcao[] = res.map((item) => {
+        const data: AcaoResult[] = JSON.parse(cached);
+        const withCodigo = data.map((item) => {
           const codigo = extractCodigoFromUrl(item.url) || "-";
           return { ...item, codigo };
         });
-        if (mounted) setAcoes(withCodigo);
-      } catch {
-        console.log('error')
-      } finally {
-        if (mounted) setLoading(false);
+        setAcoes(withCodigo);
+      } catch (error) {
+        console.error('Erro ao carregar cache:', error);
       }
-    };
-    load();
-    return () => { mounted = false; };
+    }
   }, []);
 
   const acoesFiltradas = useMemo(() =>
@@ -75,10 +64,7 @@ const Acoes: React.FC = () => {
           aria-label="Filtrar ações por nome"
         />
 
-        {loading ? (
-          <p>Carregando ações...</p>
-        ) : (
-          <table className="acoes-table">
+        <table className="acoes-table">
             <thead>
               <tr>
                 <th>Ativo</th>
@@ -102,7 +88,6 @@ const Acoes: React.FC = () => {
               ))}
             </tbody>
           </table>
-        )}
       </div>
     </div>
   );

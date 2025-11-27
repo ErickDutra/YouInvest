@@ -1,7 +1,47 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import '../styles/Carteira.css'
+import { getPortfolio } from '../services/wallet_get_all'
+import { buyAsset,sellAsset } from '../services/acoes'
 
+export type FiiResult = {
+	cotacao: { raw: string | null; value: number | null };
+	pvp: { raw: string | null; value: number | null };
+	variacao_12m: { raw: string | null; value: number | null };
+	dy: { raw: string | null; value: number | null };
+	liquidez: { raw: string | null; value: number | null };
+	url: string;
+};
+
+export type AcaoResult = {
+	cotacao: { raw: string | null; value: number | null };
+	pvp: { raw: string | null; value: number | null };
+	variacao_12m: { raw: string | null; value: number | null };
+	pl: { raw: string | null; value: number | null };
+	dy: { raw: string | null; value: number | null };
+	url: string;
+};
+
+ 
 type AssetType = 'acao' | 'fii' | 'cripto'
+
+ type PortfolioItem = {
+  code: string;
+  price: number;
+  quantity: number;
+  type: string;
+}
+ type AcaoBuy = {
+  code: string;
+  type: string;
+  market: string;
+}
+
+export interface BuyRequest {
+  acoes: AcaoBuy;
+  userId: string;
+  quantity: number;
+}
+
 
 type Asset = {
   id?: string
@@ -18,8 +58,24 @@ const colors: Record<AssetType, string> = {
   cripto: '#FF9800',
 }
 
-function formatCurrency(v: number) {
-  return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+function extractCodigoFromUrl(url: string | undefined): string | null {
+  if (!url) return null;
+  try {
+    const u = new URL(url);
+    const codigo = u.searchParams.get('codigo');
+    if (codigo) {
+      return codigo.toUpperCase();
+    }
+    const parts = u.pathname.split('/').filter(Boolean);
+    if (parts.length) {
+      return parts.at(-1)!.toUpperCase();
+    }
+    return null;
+  } catch {
+    const q = url.split('codigo=')[1];
+    if (q) return q.split('&')[0].toUpperCase();
+    return null;
+  }
 }
 
 function PieChart({ items }: { items: { label: string; value: number; color: string }[] }) {
@@ -68,29 +124,77 @@ function polarToCartesian(cx: number, cy: number, r: number, angleDeg: number) {
   return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) }
 }
 
+type BuyForm = {
+  tipo: AssetType
+  selectedCode: string
+  quantidade: number
+}
+
 export default function CarteiraPage() {
   const [assets, setAssets] = useState<Asset[]>([])
   const [loading, setLoading] = useState(false)
   const [showModal, setShowModal] = useState(false)
-  const [form, setForm] = useState<Asset>({ tipo: 'acao', nome: '', quantidade: 0, preco: 0, data: '' })
+  const [form, setForm] = useState<BuyForm>({ tipo: 'acao', selectedCode: '', quantidade: 0 })
+  const [availableAcoes, setAvailableAcoes] = useState<AcaoResult[]>([])
+  const [availableFiis, setAvailableFiis] = useState<FiiResult[]>([])
+  const [showSellModal, setShowSellModal] = useState(false)
+  const [sellForm, setSellForm] = useState<{ asset: Asset | null; quantidade: number }>({ asset: null, quantidade: 0 })
 
   useEffect(() => {
     loadAssets()
+    loadAvailableAssets()
   }, [])
+
+  async function loadAvailableAssets() {
+    const acoesCache = localStorage.getItem('acoes_cache')
+    const acoes = acoesCache ? JSON.parse(acoesCache) : []
+    console.log('Available acoes from cache:', acoes.length)
+    setAvailableAcoes(acoes)
+
+    const fiisCache = localStorage.getItem('fiis_cache')
+    const fiis = fiisCache ? JSON.parse(fiisCache) : []
+    console.log('Available fiis from cache:', fiis.length)
+    setAvailableFiis(fiis)
+  }
 
   async function loadAssets() {
     setLoading(true)
     try {
-      const res = await fetch('/api/ativos')
-      if (res.ok) {
-        const data = await res.json()
-        setAssets(data)
-      } else {
-        // endpoint talvez não exista ainda; manter vazio
+      const userInfoStr = localStorage.getItem('user_info')
+      if (!userInfoStr) {
+        console.log('No user info found in cache')
         setAssets([])
+        return
       }
+      const userInfo = JSON.parse(userInfoStr)
+      console.log('userInfo parsed:', userInfo)
+      const userId = userInfo.id
+      console.log('User ID from parsed user_info:', userId)
+      if (!userId) {
+        console.log('No user ID in user_info')
+        setAssets([])
+        return
+      }
+      const data = await getPortfolio(userId)
+      console.log('Portfolio data received:', data)
+      const mappedAssets: Asset[] = data.map((item: PortfolioItem) => {
+        let tipo: AssetType
+        if (item.type === 'ACOES') tipo = 'acao'
+        else if (item.type === 'FIIS') tipo = 'fii'
+        else tipo = 'cripto'
+        return {
+          tipo,
+          nome: item.code,
+          quantidade: item.quantity,
+          preco: item.price,
+          data: '', 
+          id: item.code + item.type 
+        }
+      })
+      console.log('Mapped assets:', mappedAssets)
+      setAssets(mappedAssets)
     } catch (error) {
-        console.log(error)
+      console.error('Erro ao carregar portfolio:', error)
       setAssets([])
     } finally {
       setLoading(false)
@@ -99,41 +203,49 @@ export default function CarteiraPage() {
 
   async function handleAdd(e?: React.FormEvent) {
     e?.preventDefault()
+    const userInfoStr = localStorage.getItem('user_info')
+    if (!userInfoStr) return
+    const userInfo = JSON.parse(userInfoStr)
+    const userId = userInfo.id
+    if (!userId || !form.selectedCode || form.quantidade <= 0) return
+    const type = form.tipo === 'acao' ? 'ACOES' : form.tipo === 'fii' ? 'FIIS' : 'CRYPTO'
+    const request: BuyRequest = {
+      acoes: { code: form.selectedCode, type, market: 'BANCOS' },
+      userId,
+      quantity: form.quantidade
+    }
     try {
-      const res = await fetch('/api/ativos', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
-      })
-
-      if (res.ok) {
-        const created = await res.json()
-        setAssets((s) => [...s, created])
-      } else {
-        // se endpoint não implementado, adiciona localmente com id temporário
-        setAssets((s) => [...s, { ...form, id: String(Date.now()) }])
-      }
+      await buyAsset(request)
+      loadAssets()
     } catch (error) {
-         console.log(error)
-      setAssets((s) => [...s, { ...form, id: String(Date.now()) }])
+      console.error('Erro ao comprar:', error)
     }
     setShowModal(false)
-    setForm({ tipo: 'acao', nome: '', quantidade: 0, preco: 0, data: '' })
+    setForm({ tipo: 'acao', selectedCode: '', quantidade: 0 })
   }
 
-  async function handleDelete(id?: string) {
-    if (!id) return
-    try {
-      const res = await fetch(`/api/ativos/${id}`, { method: 'DELETE' })
-      if (res.ok) {
-        setAssets((s) => s.filter((a) => a.id !== id))
-      } else {
-        setAssets((s) => s.filter((a) => a.id !== id))
-      }
-    } catch (error) {
-        console.log(error)
-      setAssets((s) => s.filter((a) => a.id !== id))
+  async function handleSellConfirm(e: React.FormEvent) {
+    e.preventDefault()
+    if (!sellForm.asset || sellForm.quantidade <= 0 || sellForm.quantidade > sellForm.asset.quantidade) return
+    const userInfoStr = localStorage.getItem('user_info')
+    if (!userInfoStr) return
+    const userInfo = JSON.parse(userInfoStr)
+    const userId = userInfo.id
+    if (!userId) return
+    const type = sellForm.asset.tipo === 'acao' ? 'ACOES' : sellForm.asset.tipo === 'fii' ? 'FIIS' : 'CRYPTO'
+    const request: BuyRequest = {
+      acoes: { code: sellForm.asset.nome, type, market: 'BANCOS' },
+      userId,
+      quantity: sellForm.quantidade
     }
+    try {
+      await sellAsset(request)
+      loadAssets() 
+    } catch (error) {
+      console.error('Erro ao vender:', error)
+    }
+    setShowSellModal(false)
+    setSellForm({ asset: null, quantidade: 0 })
   }
 
   const grouped = useMemo(() => {
@@ -177,7 +289,7 @@ export default function CarteiraPage() {
                   </div>
                   <div className="asset-actions">
                     <div className="asset-value">{formatCurrency(a.quantidade * a.preco)}</div>
-                    <button className="sell" onClick={() => handleDelete(a.id)}>Vender</button>
+                    <button className="sell" onClick={() => { setSellForm({ asset: a, quantidade: 0 }); setShowSellModal(true) }}>Vender</button>
                   </div>
                 </div>
               ))}
@@ -198,7 +310,7 @@ export default function CarteiraPage() {
                   </div>
                   <div className="asset-actions">
                     <div className="asset-value">{formatCurrency(a.quantidade * a.preco)}</div>
-                    <button className="sell" onClick={() => handleDelete(a.id)}>Vender</button>
+                    <button className="sell" onClick={() => { setSellForm({ asset: a, quantidade: 0 }); setShowSellModal(true) }}>Vender</button>
                   </div>
                 </div>
               ))}
@@ -219,7 +331,7 @@ export default function CarteiraPage() {
                   </div>
                   <div className="asset-actions">
                     <div className="asset-value">{formatCurrency(a.quantidade * a.preco)}</div>
-                    <button className="sell" onClick={() => handleDelete(a.id)}>Vender</button>
+                    <button className="sell" onClick={() => { setSellForm({ asset: a, quantidade: 0 }); setShowSellModal(true) }}>Vender</button>
                   </div>
                 </div>
               ))}
@@ -236,10 +348,10 @@ export default function CarteiraPage() {
       {showModal && (
         <div className="modal-overlay" role="dialog" aria-modal="true">
           <form className="modal" onSubmit={handleAdd}>
-            <h3>Registrar Ativo</h3>
+            <h3>Comprar Ativo</h3>
             <label>
               Tipo
-              <select value={form.tipo} onChange={(e) => setForm({ ...form, tipo: e.target.value as AssetType })}>
+              <select value={form.tipo} onChange={(e) => setForm({ ...form, tipo: e.target.value as AssetType, selectedCode: '' })}>
                 <option value="acao">Ação</option>
                 <option value="fii">FII</option>
                 <option value="cripto">Cripto</option>
@@ -247,8 +359,14 @@ export default function CarteiraPage() {
             </label>
 
             <label>
-              Nome
-              <input required value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} />
+              Ativo
+              <select value={form.selectedCode} onChange={(e) => setForm({ ...form, selectedCode: e.target.value })} required>
+                <option value="">Selecione</option>
+                {(form.tipo === 'acao' ? availableAcoes : form.tipo === 'fii' ? availableFiis : []).map((item, idx) => {
+                  const code = extractCodigoFromUrl(item.url)
+                  return <option key={idx} value={code || ''}>{code}</option>
+                })}
+              </select>
             </label>
 
             <label>
@@ -256,23 +374,34 @@ export default function CarteiraPage() {
               <input required type="number" step="any" value={form.quantidade} onChange={(e) => setForm({ ...form, quantidade: Number(e.target.value) })} />
             </label>
 
-            <label>
-              Preço (un.)
-              <input required type="number" step="any" value={form.preco} onChange={(e) => setForm({ ...form, preco: Number(e.target.value) })} />
-            </label>
-
-            <label>
-              Data
-              <input type="date" value={form.data} onChange={(e) => setForm({ ...form, data: e.target.value })} />
-            </label>
-
             <div className="modal-actions">
-              <button type="button" onClick={() => setShowModal(false)}>Cancelar</button>
-              <button type="submit" className="primary">Salvar</button>
+              <button type="button" className="sell" onClick={() => setShowModal(false)}>Cancelar</button>
+              <button type="submit" className="primary">Comprar</button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {showSellModal && sellForm.asset && (
+        <div className="modal-overlay" role="dialog" aria-modal="true">
+          <form className="modal" onSubmit={handleSellConfirm}>
+            <h3>Vender {sellForm.asset.nome}</h3>
+            <label>
+              Quantidade (máx: {sellForm.asset.quantidade})
+              <input required type="number" step="any" min="0" max={sellForm.asset.quantidade} value={sellForm.quantidade} onChange={(e) => setSellForm({ ...sellForm, quantidade: Number(e.target.value) })} />
+            </label>
+            <div className="modal-actions">
+              <button type="button" onClick={() => setShowSellModal(false)}>Cancelar</button>
+              <button type="submit" className="primary">Confirmar</button>
             </div>
           </form>
         </div>
       )}
     </div>
   )
+}
+
+
+function formatCurrency(v: number) {
+  return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 }

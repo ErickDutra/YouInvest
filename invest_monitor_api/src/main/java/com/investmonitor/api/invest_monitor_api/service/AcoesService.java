@@ -116,7 +116,7 @@ public class AcoesService {
         if(acao.getType().equals(CommodityType.FIIS)
         ){
         FiisSendDto fiis = actionIntegration.getFiis(acao.getCode());
-        wallet.setPrice(fiis.cotacao()); 
+        wallet.setPrice(fiis.cotacao().value()); 
         wallet.setType(CommodityType.FIIS);
     }else{
         ActionSendDto action = actionIntegration.getAction(acao.getCode());
@@ -152,7 +152,7 @@ public class AcoesService {
         Wallet wallet = new Wallet();
         if(acao.getType().equals(CommodityType.FIIS)){
             FiisSendDto fiis = actionIntegration.getFiis(acao.getCode());
-            wallet.setPrice(fiis.cotacao()); 
+            wallet.setPrice(fiis.cotacao().value()); 
             wallet.setType(CommodityType.FIIS);
         }else{
             ActionSendDto action = actionIntegration.getAction(acao.getCode());

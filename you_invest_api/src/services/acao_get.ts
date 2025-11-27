@@ -29,9 +29,19 @@ function parseBRNumber(raw?: string | null) {
 
 export async function getAcao(ticker: string): Promise<AcaoScrapeResult> {
 	const url = `${BASE}/${encodeURIComponent(ticker)}/`;
-	const res = await axios.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' } });
-	if (res.status !== 200) {
-		throw new Error(`Ticker ${ticker} não encontrado ou indisponível (status ${res.status})`);
+	let res;
+	try {
+		res = await axios.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' } });
+	} catch (err: any) {
+		// Se der erro (ex: 410, 404), retorna resultado vazio em vez de lançar erro
+		return {
+			cotacao: { raw: null, value: null },
+			pvp: { raw: null, value: null },
+			variacao_12m: { raw: null, value: null },
+			pl: { raw: null, value: null },
+			dy: { raw: null, value: null },
+			url,
+		};
 	}
 	const $ = cheerio.load(res.data);
 

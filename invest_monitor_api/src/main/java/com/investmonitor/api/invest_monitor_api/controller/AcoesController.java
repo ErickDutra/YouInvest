@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import com.investmonitor.api.invest_monitor_api.dto.AcoesDto;
 import com.investmonitor.api.invest_monitor_api.dto.ActionDto;
 import com.investmonitor.api.invest_monitor_api.dto.ActionSendDto;
+import com.investmonitor.api.invest_monitor_api.dto.BuyAcoesDto;
 import com.investmonitor.api.invest_monitor_api.dto.FiisSendDto;
 import com.investmonitor.api.invest_monitor_api.service.AcoesService;
 import com.investmonitor.api.invest_monitor_api.service.ActionServiceIntegration;
@@ -58,6 +59,16 @@ public class AcoesController {
     @GetMapping("/get/{code}")
     public ResponseEntity<ActionSendDto> getAction(@PathVariable String code){
         return ResponseEntity.ok(actionIntegration.getAction(code));
+    }
+
+    @PostMapping("/buy")
+    public ResponseEntity<String> buyAction(@RequestBody BuyAcoesDto buy) {
+        return acoesService.buyAction(buy);
+    }
+
+    @PostMapping("/sell")
+    public ResponseEntity<String> sellAction(@RequestBody BuyAcoesDto sell) {
+        return acoesService.sellAction(sell);
     }
 
 }

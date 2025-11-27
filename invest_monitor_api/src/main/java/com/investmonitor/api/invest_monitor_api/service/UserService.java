@@ -1,5 +1,8 @@
 package com.investmonitor.api.invest_monitor_api.service;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -46,4 +49,9 @@ public class UserService {
         }
         return ResponseEntity.ok(UserDto.fromEntity(user));
     }
+
+    public List<UserDto> findAll() {
+        return userRepository.findAll().stream().map(UserDto::fromEntity).collect(Collectors.toList());
+    }
+
 }
